@@ -22,7 +22,7 @@ INSTALL_LOCATION:=$(shell go env GOPATH)/bin
 GOLANGCI_LINT_VERSION ?= 1.35.2
 GOSEC_VERSION ?= 2.5.0
 
-REGISTRY ?= gcr.io/$(shell gcloud config get-value project)
+REGISTRY ?= gcr.io/apiserver-network-proxy
 STAGING_REGISTRY := gcr.io/k8s-staging-kas-network-proxy
 
 SERVER_IMAGE_NAME ?= proxy-server
@@ -155,8 +155,8 @@ certs: easy-rsa-master cfssl cfssljson
 	# create the agent <-> server-proxy connection certs
 	cd easy-rsa-master/agent; \
 	./easyrsa init-pki; \
-	./easyrsa --batch "--req-cn=127.0.0.1@$(date +%s)" build-ca nopass; \
-	./easyrsa --subject-alt-name="DNS:kubernetes,DNS:localhost,IP:127.0.0.1" build-server-full "proxy-master" nopass; \
+	./easyrsa --batch "--req-cn=$(PROXY_SERVER_IP)@$(date +%s)" build-ca nopass; \
+	./easyrsa --subject-alt-name="DNS:kubernetes,DNS:localhost,IP:$(PROXY_SERVER_IP)" build-server-full "proxy-master" nopass; \
 	./easyrsa build-client-full proxy-agent nopass; \
 	echo '{"signing":{"default":{"expiry":"43800h","usages":["signing","key encipherment","agent auth"]}}}' > "ca-config.json"; \
 	echo '{"CN":"proxy","names":[{"O":"system:nodes"}],"hosts":[""],"key":{"algo":"rsa","size":2048}}' | cfssl gencert -ca=pki/ca.crt -ca-key=pki/private/ca.key -config=ca-config.json - | cfssljson -bare proxy
