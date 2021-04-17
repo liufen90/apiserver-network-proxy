@@ -542,10 +542,10 @@ func (p *Proxy) runMTLSMasterServer(ctx context.Context, o *ProxyRunOptions, s *
 	var stop StopFunc
 
 	var tlsConfig *tls.Config
-	var err error
-	if tlsConfig, err = p.getTLSConfig(o.serverCaCert, o.serverCert, o.serverKey); err != nil {
-		return nil, err
-	}
+	//var err error
+	//if tlsConfig, err = p.getTLSConfig(o.serverCaCert, o.serverCert, o.serverKey); err != nil {
+	//	return nil, err
+	//}
 
 	addr := fmt.Sprintf(":%d", o.serverPort)
 
@@ -563,11 +563,11 @@ func (p *Proxy) runMTLSMasterServer(ctx context.Context, o *ProxyRunOptions, s *
 		// http-connect
 		server := &http.Server{
 			Addr:      addr,
-			TLSConfig: tlsConfig,
+			//TLSConfig: tlsConfig,
 			Handler: &server.Tunnel{
 				Server: s,
 			},
-			TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
+			//TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
 		}
 		stop = func() {
 			err := server.Shutdown(ctx)
@@ -576,7 +576,8 @@ func (p *Proxy) runMTLSMasterServer(ctx context.Context, o *ProxyRunOptions, s *
 			}
 		}
 		go func() {
-			err := server.ListenAndServeTLS("", "") // empty files defaults to tlsConfig
+			//err := server.ListenAndServeTLS("", "") // empty files defaults to tlsConfig
+			err := server.ListenAndServe()
 			if err != nil {
 				klog.ErrorS(err, "failed to listen on master port")
 			}
