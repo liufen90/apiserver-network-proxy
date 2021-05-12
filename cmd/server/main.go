@@ -560,6 +560,13 @@ func (p *Proxy) runMTLSMasterServer(ctx context.Context, o *ProxyRunOptions, s *
 		go grpcServer.Serve(lis)
 		stop = grpcServer.GracefulStop
 	} else {
+		// http-connect with no tls
+		httpServer := &http.Server{
+			Addr:      ":8088",
+			Handler: &server.Tunnel{
+				Server: s,
+			},
+		}
 		// http-connect
 		server := &http.Server{
 			Addr:      addr,
@@ -569,16 +576,27 @@ func (p *Proxy) runMTLSMasterServer(ctx context.Context, o *ProxyRunOptions, s *
 			},
 			TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
 		}
+
 		stop = func() {
 			err := server.Shutdown(ctx)
 			if err != nil {
 				klog.ErrorS(err, "failed to shutdown server")
+			}
+			err = httpServer.Shutdown(ctx)
+			if err != nil {
+				klog.ErrorS(err, "failed to shutdown httpServer")
 			}
 		}
 		go func() {
 			err := server.ListenAndServeTLS("", "") // empty files defaults to tlsConfig
 			if err != nil {
 				klog.ErrorS(err, "failed to listen on master port")
+			}
+		}()
+		go func() {
+			err := httpServer.ListenAndServe()
+			if err != nil {
+				klog.ErrorS(err, "failed to listen on http master port")
 			}
 		}()
 	}
